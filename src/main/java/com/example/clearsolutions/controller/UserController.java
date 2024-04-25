@@ -4,6 +4,8 @@ import com.example.clearsolutions.model.DateFilter;
 import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.service.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,34 +27,41 @@ public class UserController {
   }
 
   @PostMapping(produces = "application/json")
-  ResponseEntity<?> createUser(@Valid @RequestBody User user) {
-    return ResponseEntity.badRequest().body(null);
+  public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+    return ResponseEntity.status(HttpStatusCode.valueOf(200)).body(user);
   }
 
-
   @PatchMapping(path = "/{id}", produces = "application/json")
-  ResponseEntity<?> updateUserRequiredFields(@PathVariable long id, @RequestBody User user) {
-    return null;
+  public ResponseEntity updateUserRequiredFields(@PathVariable long id, @RequestBody User user) {
+    service.updateRequiredFields(id, user);
+    return ResponseEntity.ok().build();
   }
 
   @PutMapping(path = "/{id}", produces = "application/json")
-  ResponseEntity<?> updateUser(@Valid @PathVariable long id, @RequestBody User user) {
-    return null;
+  public ResponseEntity<?> updateUser(@Valid @PathVariable long id, @RequestBody User user) {
+    service.update(id, user);
+    return ResponseEntity.ok().build();
   }
 
   @DeleteMapping(path = "/{id}", produces = "application/json")
-  ResponseEntity<?> deleteUser(@PathVariable long id) {
-    return null;
+  public ResponseEntity<?> deleteUser(@PathVariable long id) {
+    if (service.delete(id)) {
+      return ResponseEntity.noContent().build();
+    }
+
+    return ResponseEntity.notFound().build();
   }
 
   @GetMapping(path = "/search", produces = "application/json")
-  ResponseEntity<?> searchUsersByDate(@RequestParam String from, @RequestParam String to) {
-    return null;
+  public ResponseEntity<?> searchUsersByDate(
+      @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date should format in 'yyyy-mm-dd'") @RequestParam String from,
+      @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date should format in 'yyyy-mm-dd'") @RequestParam String to) {
+    return ResponseEntity.ok().body(service.searchByDate(from, to));
   }
 
   @PostMapping(path = "/search", produces = "application/json")
   ResponseEntity<?> searchUsersByDate(@RequestBody DateFilter filter) {
-    return null;
+    return ResponseEntity.ok().body(service.searchByDate(filter.getFrom(), filter.getTo()));
   }
 
 }

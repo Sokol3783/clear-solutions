@@ -32,7 +32,7 @@ public class UserService {
   }
 
   @SneakyThrows
-  public void update(User user){
+  public void update(long id, User user){
     if (users.remove(user)) {
         users.add(user);
     } else {
@@ -42,7 +42,7 @@ public class UserService {
 
 
   @SneakyThrows
-  public void updateRequiredFields(User user) {
+  public void updateRequiredFields(long id, User user) {
     User saved = users.stream().filter(s -> s.getId() == user.getId()).findFirst()
         .orElseThrow(() -> new UserServiceException(UserServiceException.USER_NOT_FOUND));
 
@@ -84,14 +84,20 @@ public class UserService {
   }
 
   @SneakyThrows
-  public boolean delete(User user) {
-    return users.remove(user);
+  public boolean delete(long id) {
+    return users.removeIf(s -> s.getId() == id);
   }
 
   @SneakyThrows
-  public List<User> searchByDate(OffsetDateTime from , OffsetDateTime to){
-    if (from.isAfter(to)) throw new UserServiceException("Date From should be less than date to!");
-    return users.stream().filter(users -> users.getBirthDate().isAfter(from) && users.getBirthDate().isBefore(to)).toList();
+  public List<User> searchByDate(String from, String to){
+
+    OffsetDateTime fromDate = OffsetDateTime.parse(from);
+    OffsetDateTime toDate  = OffsetDateTime.parse(to);
+
+    if (fromDate.isAfter(toDate)) throw new UserServiceException("Date 'From' should be less than date 'To'!");
+
+    return users.stream().filter(users -> users.getBirthDate().isAfter(fromDate) && users.getBirthDate().isBefore(toDate)).toList();
+
   }
 
 }
