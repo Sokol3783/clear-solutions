@@ -1,12 +1,14 @@
 package com.example.clearsolutions.model;
 
-import java.time.OffsetDateTime;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
 public class DateFilter {
 
-  OffsetDateTime from;
-  OffsetDateTime to;
+  @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date should format in 'yyyy-mm-dd'")
+  String from;
+  @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date should format in 'yyyy-mm-dd'")
+  String to;
 
 }
