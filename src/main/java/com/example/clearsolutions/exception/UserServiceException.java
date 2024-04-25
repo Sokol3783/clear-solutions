@@ -1,4 +1,4 @@
-package com.example.clearsolutions.service;
+package com.example.clearsolutions.exception;
 
 public class UserServiceException extends Throwable {
 
