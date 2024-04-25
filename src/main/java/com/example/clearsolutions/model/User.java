@@ -1,26 +1,40 @@
 package com.example.clearsolutions.model;
 
-import jakarta.annotation.Nonnull;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Past;
 import java.time.OffsetDateTime;
+import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.EqualsAndHashCode.Exclude;
 
 @Data
-@NoArgsConstructor
-@RequiredArgsConstructor
+@EqualsAndHashCode
+@Builder(toBuilder = true)
 public class User {
 
   private long id;
-  @Nonnull
+
+  @Email
+  @Exclude
   private String email;
-  @Nonnull
+
+  @NotBlank
+  @Exclude
   private String firstName;
-  @Nonnull
-  private String LastName;
-  @Nonnull
+
+  @NotBlank
+  private String lastName;
+
+  @Past
+  @Exclude
   private OffsetDateTime birthDate;
+
+  @Exclude
   private String address;
+
+  @Exclude
   private String phone;
 
 }
