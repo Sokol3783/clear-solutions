@@ -1,6 +1,7 @@
 package com.example.clearsolutions.service;
 
 
+import com.example.clearsolutions.exception.UserServiceException;
 import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.model.User.UserBuilder;
 import jakarta.validation.ConstraintViolation;
