@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController("users")
+@RestController("/users")
 public class UserController {
 
   private final UserService service;
@@ -26,36 +26,34 @@ public class UserController {
     this.service = service;
   }
 
-  @PostMapping(produces = "application/json")
-  public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+  @PostMapping(path = "/users", produces = "application/json")
+  public ResponseEntity<?> createUser(@Valid @RequestBody User user) {
+    service.save(user);
     return ResponseEntity.status(HttpStatusCode.valueOf(200)).body(user);
   }
 
-  @PatchMapping(path = "/{id}", produces = "application/json")
-  public ResponseEntity updateUserRequiredFields(@PathVariable long id, @RequestBody User user) {
+  @PatchMapping(path = "/users/{id}", produces = "application/json")
+  public ResponseEntity<?> updateUserRequiredFields(@PathVariable long id, @RequestBody User user) {
     service.updateRequiredFields(id, user);
     return ResponseEntity.ok().build();
   }
 
-  @PutMapping(path = "/{id}", produces = "application/json")
-  public ResponseEntity<?> updateUser(@Valid @PathVariable long id, @RequestBody User user) {
+  @PutMapping(path = "/users/{id}", produces = "application/json")
+  public ResponseEntity<?> updateUser(@PathVariable long id, @Valid @RequestBody User user) {
     service.update(id, user);
     return ResponseEntity.ok().build();
   }
 
-  @DeleteMapping(path = "/{id}", produces = "application/json")
+  @DeleteMapping(path = "/users/{id}", produces = "application/json")
   public ResponseEntity<?> deleteUser(@PathVariable long id) {
-    if (service.delete(id)) {
-      return ResponseEntity.noContent().build();
-    }
-
-    return ResponseEntity.notFound().build();
+    service.delete(id);
+    return ResponseEntity.noContent().build();
   }
 
-  @GetMapping(path = "/search", produces = "application/json")
+  @GetMapping(path = "/users/search", produces = "application/json")
   public ResponseEntity<?> searchUsersByDate(
-      @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date should format in 'yyyy-mm-dd'") @RequestParam String from,
-      @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date should format in 'yyyy-mm-dd'") @RequestParam String to) {
+      @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date 'FROM' should format in 'yyyy-mm-dd'") @RequestParam String from,
+      @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date 'TO' should format in 'yyyy-mm-dd'") @RequestParam String to) {
     return ResponseEntity.ok().body(service.searchByDate(from, to));
   }
 
