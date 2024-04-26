@@ -5,10 +5,11 @@ import com.example.clearsolutions.exception.UserServiceException;
 import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.model.User.UserBuilder;
 import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
 import jakarta.validation.ValidationException;
 import jakarta.validation.Validator;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -16,89 +17,105 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
 @Service
 public class UserService {
 
-  private Set<User> users = new TreeSet(Comparator.comparingLong(User::getId));
-  private static final AtomicLong sequence = new AtomicLong();
-  private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+  private final AtomicLong sequence = new AtomicLong();
 
-  public User save(@Validated  User user) {
-     user.setId(sequence.incrementAndGet());
-     users.add(user);
-     return user;
+  private Validator validator;
+
+  private final Set<User> users = new TreeSet(Comparator.comparingLong(User::getId));
+
+  public UserService(@Autowired Validator validator) {
+    this.validator = validator;
+  }
+
+  public User save(User user) {
+    User build = user.toBuilder().id(sequence.incrementAndGet()).build();
+    users.add(build);
+    return build;
   }
 
   @SneakyThrows
-  public void update(long id, User user){
-    if (users.remove(user)) {
-        users.add(user);
-    } else {
-      throw new UserServiceException(UserServiceException.USER_NOT_FOUND);
-    }
+  public void update(long id, User user) {
+    User old = findById(id);
+    users.remove(old);
+    users.add(user);
   }
 
-
   @SneakyThrows
-  public void updateRequiredFields(long id, User user) {
-    User saved = users.stream().filter(s -> s.getId() == user.getId()).findFirst()
-        .orElseThrow(() -> new UserServiceException(UserServiceException.USER_NOT_FOUND));
+  public void updateRequiredFields(long id, User userForUpdate) {
+    User saved = findById(id);
+    User updated = updateNotNullFields(userForUpdate, saved.toBuilder());
 
-    UserBuilder builderForUpdate = saved.toBuilder();
-
-    updateNotNullFields(user, builderForUpdate);
-
-    User updated = builderForUpdate.build();
-
-    Set<ConstraintViolation<User>> validate = validator.validate(updated);
-    if (validate.size() > 0){
-      throw new ValidationException(validate.stream().map(s -> s.getMessage()).collect(Collectors.joining()));
+    Set<ConstraintViolation<User>> validate = validator.validate(updated, User.class);
+    if (!validate.isEmpty()) {
+      throw new ValidationException(
+          validate.stream().map(ConstraintViolation::getMessage).collect(Collectors.joining()));
     }
+
 
     users.remove(saved);
     users.add(updated);
 
   }
 
-  private static void updateNotNullFields(User user, UserBuilder builderForUpdate) {
-    if (user.getEmail() != null){
+  private User updateNotNullFields(User user, UserBuilder builderForUpdate) {
+    if (user.getEmail() != null) {
       builderForUpdate.email(user.getEmail());
     }
 
-    if(user.getFirstName() != null){
+    if (user.getFirstName() != null) {
       builderForUpdate.firstName(user.getFirstName());
     }
 
-    if(user.getLastName() != null) {
+    if (user.getLastName() != null) {
       builderForUpdate.lastName(user.getLastName());
     }
-    if(user.getAddress() != null) {
+    if (user.getAddress() != null) {
       builderForUpdate.address(user.getAddress());
     }
 
-    if (user.getBirthDate() != null){
+    if (user.getBirthDate() != null) {
       builderForUpdate.birthDate(user.getBirthDate());
     }
+    return builderForUpdate.build();
   }
 
   @SneakyThrows
-  public boolean delete(long id) {
-    return users.removeIf(s -> s.getId() == id);
+  public void delete(long id) {
+    users.remove(findById(id));
   }
 
   @SneakyThrows
-  public List<User> searchByDate(String from, String to){
+  public List<User> searchByDate(String from, String to) {
 
-    OffsetDateTime fromDate = OffsetDateTime.parse(from);
-    OffsetDateTime toDate  = OffsetDateTime.parse(to);
+    OffsetDateTime fromDate = OffsetDateTime.parse(from + "T00:00:00+00"); // (from);
+    OffsetDateTime toDate = OffsetDateTime.parse(to + "T00:00:00+00"); // (from);
 
-    if (fromDate.isAfter(toDate)) throw new UserServiceException("Date 'From' should be less than date 'To'!");
+    if (fromDate.isAfter(toDate)) {
+      throw new UserServiceException("Date 'From' should be less than date 'To'!");
+    }
 
-    return users.stream().filter(users -> users.getBirthDate().isAfter(fromDate) && users.getBirthDate().isBefore(toDate)).toList();
+    return users.stream().filter(
+            users -> users.getBirthDate().isAfter(fromDate) && users.getBirthDate().isBefore(toDate))
+        .toList();
 
+  }
+
+  private User findById(long id) throws UserServiceException {
+    return users.stream().filter(s -> s.getId() == id).findFirst()
+        .orElseThrow(() -> new UserServiceException(UserServiceException.USER_NOT_FOUND));
+  }
+
+  private DateTimeFormatter getCustomFormatter(){
+    return new DateTimeFormatterBuilder()
+        .append(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        .appendOffset("+HHMM","Z")
+        .toFormatter();
   }
 
 }
