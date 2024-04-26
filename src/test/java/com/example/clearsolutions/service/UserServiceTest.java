@@ -14,10 +14,7 @@ import com.example.clearsolutions.exception.UserServiceException;
 import com.example.clearsolutions.model.User;
 import jakarta.validation.ValidationException;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
@@ -60,6 +57,7 @@ class UserServiceTest {
   }
 
   @Test
+  @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
   void shouldThrowValidateExceptionWhenUpdateRequiredFieldsNotValid() {
     addTestUsers(service);
     User emptyUser = User.builder().build();
@@ -67,6 +65,7 @@ class UserServiceTest {
   }
 
   @Test
+  @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
   void shouldReturnEmptyListBecauseDateOf() {
     addTestUsers(service);
     List<User> users = service.searchByDate("1900-02-01", "1950-02-01");

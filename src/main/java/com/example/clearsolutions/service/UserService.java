@@ -8,8 +8,6 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ValidationException;
 import jakarta.validation.Validator;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -57,7 +55,6 @@ public class UserService {
           validate.stream().map(ConstraintViolation::getMessage).collect(Collectors.joining()));
     }
 
-
     users.remove(saved);
     users.add(updated);
 
@@ -101,21 +98,18 @@ public class UserService {
     }
 
     return users.stream().filter(
-            users -> users.getBirthDate().isAfter(fromDate) && users.getBirthDate().isBefore(toDate))
+            users -> inRangeOfDates(users, fromDate, toDate))
         .toList();
 
+  }
+
+  private static boolean inRangeOfDates(User users, OffsetDateTime fromDate, OffsetDateTime toDate) {
+    return users.getBirthDate().isAfter(fromDate) && users.getBirthDate().isBefore(toDate);
   }
 
   private User findById(long id) throws UserServiceException {
     return users.stream().filter(s -> s.getId() == id).findFirst()
         .orElseThrow(() -> new UserServiceException(UserServiceException.USER_NOT_FOUND));
-  }
-
-  private DateTimeFormatter getCustomFormatter(){
-    return new DateTimeFormatterBuilder()
-        .append(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        .appendOffset("+HHMM","Z")
-        .toFormatter();
   }
 
 }
