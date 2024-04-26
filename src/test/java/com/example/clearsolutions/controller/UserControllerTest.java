@@ -1,6 +1,8 @@
 package com.example.clearsolutions.controller;
 
 
+import static com.example.clearsolutions.util.TestUtil.getTestUser;
+import static com.example.clearsolutions.util.TestUtil.getTestUsers;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
@@ -17,7 +19,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.clearsolutions.exception.UserServiceException;
 import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.service.UserService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -97,12 +101,16 @@ class UserControllerTest {
   }
 
   @Test
-  void shouldReturnArrayWithTwoSearchedDates() {
+  void shouldReturnArrayWithThreeUsers() throws JsonProcessingException {
+    List<User> testUsers = getTestUsers();
 
 
-    when(service.searchByDate(any(), any())).then()
-    assertAll();
+    when(service.searchByDate(any(), any())).thenReturn(testUsers);
 
+    mvc.perform(get(SEARCH_TEMPLATE + "?from=1900-01-01&to=2025-01-01"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$.length"))
+        .
 
   }
 
