@@ -1,14 +1,14 @@
 package com.example.clearsolutions.exception;
 
-public class UserServiceException extends RuntimeException {
+public class UserNotFoundException extends RuntimeException {
 
   public static final String USER_NOT_FOUND = "User not found!";
 
-  public UserServiceException() {
+  public UserNotFoundException() {
     super();
   }
 
-  public UserServiceException(String message) {
+  public UserNotFoundException(String message) {
     super(message);
   }
 }
