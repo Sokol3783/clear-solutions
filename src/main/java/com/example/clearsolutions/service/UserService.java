@@ -1,7 +1,8 @@
 package com.example.clearsolutions.service;
 
 
-import com.example.clearsolutions.exception.UserServiceException;
+import com.example.clearsolutions.exception.InvalidDateException;
+import com.example.clearsolutions.exception.UserNotFoundException;
 import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.model.User.UserBuilder;
 import jakarta.validation.ConstraintViolation;
@@ -94,7 +95,7 @@ public class UserService {
     OffsetDateTime toDate = OffsetDateTime.parse(to + "T00:00:00+00"); // (from);
 
     if (fromDate.isAfter(toDate)) {
-      throw new UserServiceException("Date 'From' should be less than date 'To'!");
+      throw new InvalidDateException("Date 'From' should be less than date 'To'!");
     }
 
     return users.stream().filter(
@@ -107,9 +108,9 @@ public class UserService {
     return users.getBirthDate().isAfter(fromDate) && users.getBirthDate().isBefore(toDate);
   }
 
-  private User findById(long id) throws UserServiceException {
+  private User findById(long id) throws UserNotFoundException {
     return users.stream().filter(s -> s.getId() == id).findFirst()
-        .orElseThrow(() -> new UserServiceException(UserServiceException.USER_NOT_FOUND));
+        .orElseThrow(() -> new UserNotFoundException(UserNotFoundException.USER_NOT_FOUND));
   }
 
 }
