@@ -2,11 +2,10 @@ package com.example.clearsolutions.customvalidator;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
-public class AgeLimitValidator implements ConstraintValidator<AgeLimit, OffsetDateTime> {
+public class AgeLimitValidator implements ConstraintValidator<AgeLimit, LocalDateTime> {
 
-  int minimumAge;
 
   @Override
   public void initialize(AgeLimit constraintAnnotation) {
@@ -14,14 +13,14 @@ public class AgeLimitValidator implements ConstraintValidator<AgeLimit, OffsetDa
   }
 
   @Override
-  public boolean isValid(OffsetDateTime birthDate,
+  public boolean isValid(LocalDateTime birthDate,
       ConstraintValidatorContext constraintValidatorContext) {
 
     if(birthDate == null){
       return false;
     }
-    OffsetDateTime  today = OffsetDateTime.now();
-    OffsetDateTime minimumAgeYearsAgo = today.minusYears(this.minimumAge);
+    LocalDateTime  today = LocalDateTime.now();
+    LocalDateTime minimumAgeYearsAgo = today.minusYears(AgeLimit.MINIMUM_AGE);
     return !minimumAgeYearsAgo.isBefore(birthDate);
 
   }
