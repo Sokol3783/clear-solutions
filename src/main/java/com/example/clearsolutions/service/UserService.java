@@ -1,13 +1,15 @@
 package com.example.clearsolutions.service;
 
 
-import com.example.clearsolutions.exception.UserServiceException;
+import com.example.clearsolutions.exception.InvalidDateException;
+import com.example.clearsolutions.exception.UserNotFoundException;
 import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.model.User.UserBuilder;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ValidationException;
 import jakarta.validation.Validator;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -90,11 +92,11 @@ public class UserService {
   @SneakyThrows
   public List<User> searchByDate(String from, String to) {
 
-    OffsetDateTime fromDate = OffsetDateTime.parse(from + "T00:00:00+00"); // (from);
-    OffsetDateTime toDate = OffsetDateTime.parse(to + "T00:00:00+00"); // (from);
+    LocalDateTime fromDate = LocalDateTime.parse(from + "T00:00:00+00"); // (from);
+    LocalDateTime toDate = LocalDateTime.parse(to + "T00:00:00+00"); // (from);
 
     if (fromDate.isAfter(toDate)) {
-      throw new UserServiceException("Date 'From' should be less than date 'To'!");
+      throw new InvalidDateException("Date 'From' should be less than date 'To'!");
     }
 
     return users.stream().filter(
@@ -103,13 +105,13 @@ public class UserService {
 
   }
 
-  private static boolean inRangeOfDates(User users, OffsetDateTime fromDate, OffsetDateTime toDate) {
+  private static boolean inRangeOfDates(User users, LocalDateTime fromDate, LocalDateTime toDate) {
     return users.getBirthDate().isAfter(fromDate) && users.getBirthDate().isBefore(toDate);
   }
 
-  private User findById(long id) throws UserServiceException {
+  private User findById(long id) throws UserNotFoundException {
     return users.stream().filter(s -> s.getId() == id).findFirst()
-        .orElseThrow(() -> new UserServiceException(UserServiceException.USER_NOT_FOUND));
+        .orElseThrow(() -> new UserNotFoundException(UserNotFoundException.USER_NOT_FOUND));
   }
 
 }

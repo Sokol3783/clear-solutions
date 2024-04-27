@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.example.clearsolutions.exception.UserServiceException;
+import com.example.clearsolutions.exception.UserNotFoundException;
 import com.example.clearsolutions.model.User;
 import jakarta.validation.ValidationException;
 import java.util.List;
@@ -30,18 +30,18 @@ class UserServiceTest {
   void shouldThrowUserNotFoundExceptionWhenThereAreNoUser() {
     addTestUsers(service);
     User user = getTestUser();
-    assertAll(() -> assertThrows(UserServiceException.class, () -> service.delete(5L)),
-        () -> assertThrows(UserServiceException.class, () -> service.update(5L, user)),
-        () -> assertThrows(UserServiceException.class, () -> service.updateRequiredFields(5L, user))
+    assertAll(() -> assertThrows(UserNotFoundException.class, () -> service.delete(5L)),
+        () -> assertThrows(UserNotFoundException.class, () -> service.update(5L, user)),
+        () -> assertThrows(UserNotFoundException.class, () -> service.updateRequiredFields(5L, user))
     );
 
   }
 
   @Test
   void shouldThrowInvalidDateFilter() {
-    UserServiceException userServiceException = assertThrows(UserServiceException.class,
+    UserNotFoundException userNotFoundException = assertThrows(UserNotFoundException.class,
         () -> service.searchByDate("1995-12-13", "1994-12-13"));
-    assertTrue(userServiceException.getMessage()
+    assertTrue(userNotFoundException.getMessage()
         .contentEquals("Date 'From' should be less than date 'To'!"));
   }
 

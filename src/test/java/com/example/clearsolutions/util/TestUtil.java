@@ -2,7 +2,7 @@ package com.example.clearsolutions.util;
 
 import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.service.UserService;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -43,9 +43,9 @@ public class TestUtil {
       this.year = year;
     }
 
-    public OffsetDateTime build() {
+    public LocalDateTime build() {
       ZoneOffset zone = ZoneOffset.UTC;
-      return OffsetDateTime.of(year, 12, 5, 0, 0, 0, 0, zone);
+      return LocalDateTime.of(year, 12, 5, 0, 0, 0);
     }
   }
 
