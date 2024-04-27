@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.example.clearsolutions.exception.UserServiceException;
+import com.example.clearsolutions.exception.UserNotFoundException;
 import com.example.clearsolutions.model.DateFilter;
 import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.service.UserService;
@@ -45,9 +45,9 @@ class UserControllerTest {
 
   @Test
   void shouldReturnUserNotFoundForNonExistsOne() {
-    doThrow(UserServiceException.class).when(service).delete(any(Long.class));
-    doThrow(UserServiceException.class).when(service).update(any(Long.class), any(User.class));
-    doThrow(UserServiceException.class).when(service)
+    doThrow(UserNotFoundException.class).when(service).delete(any(Long.class));
+    doThrow(UserNotFoundException.class).when(service).update(any(Long.class), any(User.class));
+    doThrow(UserNotFoundException.class).when(service)
         .updateRequiredFields(any(Long.class), any(User.class));
 
     assertAll(() -> mvc.perform(delete(USERS_1_TEMPLATE)).andExpect(status().isNotFound()),
