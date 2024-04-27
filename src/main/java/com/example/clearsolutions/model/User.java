@@ -3,32 +3,34 @@ package com.example.clearsolutions.model;
 import com.example.clearsolutions.customvalidator.AgeLimit;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.EqualsAndHashCode.Exclude;
+import org.springframework.beans.factory.annotation.Value;
 
 @Data
 @EqualsAndHashCode
 @Builder(toBuilder = true)
 public class User {
-
-   private long id;
+  @Value("${registration.age.limit}")
+  private static final int MINIMUM_AGE = 0;
+  private long id;
 
   @Email
   @Exclude
   private String email;
 
-  @NotBlank(message = "First name should not be empty!")
+  @NotBlank
   @Exclude
   private String firstName;
 
-  @NotBlank(message = "Last name should not be empty!")
+  @NotBlank
   private String lastName;
 
-  @AgeLimit
-  private LocalDateTime birthDate;
+  @AgeLimit(minimumAge = MINIMUM_AGE, message = "User must be at least" + MINIMUM_AGE + " years old")
+  private OffsetDateTime birthDate;
 
   @Exclude
   private String address;
