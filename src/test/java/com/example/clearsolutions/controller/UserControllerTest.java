@@ -1,7 +1,6 @@
 package com.example.clearsolutions.controller;
 
 
-import static com.example.clearsolutions.util.TestUtil.getTestUser;
 import static com.example.clearsolutions.util.TestUtil.getTestUsers;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.clearsolutions.exception.UserServiceException;
+import com.example.clearsolutions.model.DateFilter;
 import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -103,24 +103,22 @@ class UserControllerTest {
   @Test
   void shouldReturnArrayWithThreeUsers() throws JsonProcessingException {
     List<User> testUsers = getTestUsers();
-
-
     when(service.searchByDate(any(), any())).thenReturn(testUsers);
+    ObjectMapper mapper = new ObjectMapper();
+    DateFilter filter = new DateFilter("1900-01-01", "2025-01-01");
 
-    mvc.perform(get(SEARCH_TEMPLATE + "?from=1900-01-01&to=2025-01-01"))
-        .andExpect(status().isOk()).andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$.length"))
-        .
-
-  }
-
-  @Test
-  void shouldReturnNotValidAgeForRegistration() {
-
-  }
-
-  @Test
-  void shouldReturnInvalidDataWhenUpdateRequiredFields() {
+    assertAll(() -> mvc.perform(get(SEARCH_TEMPLATE + "?from=1900-01-01&to=2025-01-01"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length").value(2))
+            .andExpect(jsonPath("$.[0]").value(mapper.writeValueAsString(testUsers.get(0))))
+            .andExpect(jsonPath("$.[1]").value(mapper.writeValueAsString(testUsers.get(1))))
+            .andExpect(jsonPath("$.[2]").value(mapper.writeValueAsString(testUsers.get(2)))),
+        () -> mvc.perform(post(SEARCH_TEMPLATE).content(mapper.writeValueAsString(filter)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length").value(2))
+            .andExpect(jsonPath("$.[0]").value(mapper.writeValueAsString(testUsers.get(0))))
+            .andExpect(jsonPath("$.[1]").value(mapper.writeValueAsString(testUsers.get(1))))
+            .andExpect(jsonPath("$.[2]").value(mapper.writeValueAsString(testUsers.get(2)))));
 
   }
 
