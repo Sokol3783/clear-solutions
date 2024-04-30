@@ -5,6 +5,7 @@ import static com.example.clearsolutions.util.TestUtil.getTestUser;
 import static com.example.clearsolutions.util.TestUtil.getTestUsers;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -23,7 +24,11 @@ import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -40,6 +45,8 @@ class UserControllerTest {
   private final static String SEARCH_TEMPLATE = "/users/search";
 
   @Autowired
+  Validator validator;
+  @Autowired
   ObjectMapper mapper;
   @Autowired
   MockMvc mvc;
@@ -52,15 +59,14 @@ class UserControllerTest {
 
     doThrow(UserNotFoundException.class).when(service).delete(1l);
     doThrow(UserNotFoundException.class).when(service).update(1l, user);
-    doThrow(UserNotFoundException.class).when(service).updateRequiredFields(1, user);
+    doThrow(UserNotFoundException.class).when(service).updateRequiredFields(1l, user);
 
     String body = mapper.writeValueAsString(user);
 
     assertAll(() -> mvc.perform(delete(USERS_1_TEMPLATE)).andExpect(status().isNotFound()),
         () -> mvc.perform(
                 put(USERS_1_TEMPLATE).content(body).contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNotFound()),
-        () -> mvc.perform(
+            .andExpect(status().isNotFound()), () -> mvc.perform(
                 patch(USERS_1_TEMPLATE).content(body).contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound()));
   }
@@ -75,37 +81,39 @@ class UserControllerTest {
 
   @Test
   void shouldReturnMessageWithMessageForInvalidFields() throws Exception {
-    String emptyUser = mapper.writeValueAsString(User.builder().build());
+    User user = User.builder().email(" ").lastName(" ").build();
+    String emptyUser = mapper.writeValueAsString(user);
+    Set<ConstraintViolation<User>> validate = validator.validate(user);
+    doThrow(new ConstraintViolationException(validate)).when(service)
+        .updateRequiredFields(anyLong(), any());
 
-    assertAll(
-        () -> mvc.perform(
+    assertAll(() -> mvc.perform(
                 put(USERS_1_TEMPLATE).contentType(MediaType.APPLICATION_JSON).content(emptyUser))
             .andExpect(status().isBadRequest()),
         () -> mvc.perform(post("/users").contentType(MediaType.APPLICATION_JSON).content(emptyUser))
-            .andExpect(status().isBadRequest()),
-        () -> mvc.perform(
-                patch(USERS_1_TEMPLATE).contentType(MediaType.APPLICATION_JSON).content(emptyUser))
-            .andExpect(status().isBadRequest())
-    );
+            .andExpect(status().isBadRequest()), () -> mvc.perform(
+            patch(USERS_1_TEMPLATE).contentType(MediaType.APPLICATION_JSON).content(emptyUser)));
   }
 
   @Test
-  void shouldReturnMessageWithInvalidDataFormatForSearch() {
+  void shouldReturnMessageWithInvalidDataFormatForSearchWhenGetMethod() throws Exception {
+    DateFilter filter = new DateFilter("1238712983712", "12376127312");
 
-    assertAll(() -> mvc.perform(get(SEARCH_TEMPLATE + "?from=1238712983712&to=12376127312"))
-            .andExpect(status().isBadRequest()).andExpect(
-                jsonPath("$.from").value("Date 'FROM' should format in 'yyyy-mm-dd'")
-            ).andExpect(
-                jsonPath("$.to").value("Date 'FROM' should format in 'yyyy-mm-dd'")
-            ),
-        () -> mvc.perform(
-                post(SEARCH_TEMPLATE).content("{\"from\": \"12992312\", \"to\": \"12312312\"}")
-                    .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isBadRequest()).andExpect(
-                jsonPath("$.from").value("Date 'FROM' should format in 'yyyy-mm-dd'")
-            ).andExpect(
-                jsonPath("$.to").value("Date 'FROM' should format in 'yyyy-mm-dd'")
-            ));
+    mvc.perform(
+            get(SEARCH_TEMPLATE).queryParam("from", filter.getFrom()).queryParam("to", filter.getTo()))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.from").value("Date 'FROM' should format in 'yyyy-mm-dd'"))
+        .andExpect(jsonPath("$.to").value("Date 'TO' should format in 'yyyy-mm-dd'"));
+  }
+
+  @Test
+  void shouldReturnMessageWithInvalidDataFormatForSearchWhenPostMethod() throws Exception {
+    DateFilter filter = new DateFilter("1238712983712", "12376127312");
+
+    mvc.perform(post(SEARCH_TEMPLATE).content(mapper.writeValueAsString(filter))
+            .contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.from").value("Date 'FROM' should format in 'yyyy-mm-dd'"))
+        .andExpect(jsonPath("$.to").value("Date 'TO' should format in 'yyyy-mm-dd'"));
   }
 
   @Test
@@ -115,13 +123,12 @@ class UserControllerTest {
     DateFilter filter = new DateFilter("1900-01-01", "2025-01-01");
     String expectedValue = mapper.writeValueAsString(testUsers);
     assertAll(() -> mvc.perform(
-                get(SEARCH_TEMPLATE).queryParam("from", filter.getFrom()).queryParam("to", filter.getTo()))
-            .andExpect(status().isOk()).andExpect(jsonPath("$").isArray())
-            .andExpect(content().string(expectedValue)),
-        () -> mvc.perform(post(SEARCH_TEMPLATE).content(mapper.writeValueAsString(filter))
-                .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk()).andExpect(jsonPath("$").isArray())
-            .andExpect(content().string(expectedValue)));
+            get(SEARCH_TEMPLATE).queryParam("from", filter.getFrom()).queryParam("to", filter.getTo()))
+        .andExpect(status().isOk()).andExpect(jsonPath("$").isArray())
+        .andExpect(content().string(expectedValue)), () -> mvc.perform(
+            post(SEARCH_TEMPLATE).content(mapper.writeValueAsString(filter))
+                .contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray()).andExpect(content().string(expectedValue)));
 
   }
 
