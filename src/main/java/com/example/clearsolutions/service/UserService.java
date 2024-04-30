@@ -6,7 +6,7 @@ import com.example.clearsolutions.exception.UserNotFoundException;
 import com.example.clearsolutions.model.User;
 import com.example.clearsolutions.model.User.UserBuilder;
 import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ValidationException;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -52,8 +51,7 @@ public class UserService {
 
     Set<ConstraintViolation<User>> validate = validator.validate(updated, User.class);
     if (!validate.isEmpty()) {
-      throw new ValidationException(
-          validate.stream().map(ConstraintViolation::getMessage).collect(Collectors.joining()));
+      throw new ConstraintViolationException(validate);
     }
 
     users.remove(saved);
@@ -99,16 +97,16 @@ public class UserService {
     }
 
     return users.stream().filter(
-            users -> inRangeOfDates(users, fromDate, toDate))
+            user -> inRangeOfDates(user, fromDate, toDate))
         .toList();
 
   }
 
-  private static boolean inRangeOfDates(User users, OffsetDateTime fromDate, OffsetDateTime toDate) {
-    return users.getBirthDate().isAfter(fromDate) && users.getBirthDate().isBefore(toDate);
+  private static boolean inRangeOfDates(User user, OffsetDateTime fromDate, OffsetDateTime toDate) {
+    return user.getBirthDate().isAfter(fromDate) && user.getBirthDate().isBefore(toDate);
   }
 
-  private User findById(long id) throws UserNotFoundException {
+  public User findById(long id) throws UserNotFoundException {
     return users.stream().filter(s -> s.getId() == id).findFirst()
         .orElseThrow(() -> new UserNotFoundException(UserNotFoundException.USER_NOT_FOUND));
   }

@@ -54,8 +54,8 @@ public class UserController {
 
   @GetMapping(path = "/users/search", produces = "application/json")
   public ResponseEntity<?> searchUsersByDate(
-      @Valid @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date 'FROM' should format in 'yyyy-mm-dd'") @RequestParam String from,
-      @Valid @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date 'TO' should format in 'yyyy-mm-dd'") @RequestParam String to) {
+      @Valid @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date 'FROM' should format in 'yyyy-mm-dd'") @RequestParam("from") String from,
+      @Valid @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date 'TO' should format in 'yyyy-mm-dd'") @RequestParam("to") String to) {
     return ResponseEntity.ok().body(service.searchByDate(from, to));
   }
 
