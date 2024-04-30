@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -17,7 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController("/users")
+@RestController("users")
+@Validated
 public class UserController {
 
   private final UserService service;
@@ -28,8 +30,8 @@ public class UserController {
 
   @PostMapping(path = "/users", produces = "application/json")
   public ResponseEntity<?> createUser(@Valid @RequestBody User user) {
-    service.save(user);
-    return ResponseEntity.status(HttpStatusCode.valueOf(200)).body(user);
+    User save = service.save(user);
+    return ResponseEntity.status(HttpStatusCode.valueOf(200)).body(save);
   }
 
   @PatchMapping(path = "/users/{id}", produces = "application/json")
@@ -52,13 +54,13 @@ public class UserController {
 
   @GetMapping(path = "/users/search", produces = "application/json")
   public ResponseEntity<?> searchUsersByDate(
-      @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date 'FROM' should format in 'yyyy-mm-dd'") @RequestParam String from,
-      @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date 'TO' should format in 'yyyy-mm-dd'") @RequestParam String to) {
+      @Valid @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date 'FROM' should format in 'yyyy-mm-dd'") @RequestParam String from,
+      @Valid @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}", message = "Date 'TO' should format in 'yyyy-mm-dd'") @RequestParam String to) {
     return ResponseEntity.ok().body(service.searchByDate(from, to));
   }
 
-  @PostMapping(path = "/search", produces = "application/json")
-  ResponseEntity<?> searchUsersByDate(@RequestBody DateFilter filter) {
+  @PostMapping(path = "/users/search", produces = "application/json")
+  ResponseEntity<?> searchUsersByDate(@RequestBody @Valid DateFilter filter) {
     return ResponseEntity.ok().body(service.searchByDate(filter.getFrom(), filter.getTo()));
   }
 

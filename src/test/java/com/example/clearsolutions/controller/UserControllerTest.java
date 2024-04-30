@@ -1,6 +1,7 @@
 package com.example.clearsolutions.controller;
 
 
+import static com.example.clearsolutions.util.TestUtil.getTestUser;
 import static com.example.clearsolutions.util.TestUtil.getTestUsers;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.any;
@@ -12,6 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,28 +40,34 @@ class UserControllerTest {
   private final static String SEARCH_TEMPLATE = "/users/search";
 
   @Autowired
+  ObjectMapper mapper;
+  @Autowired
   MockMvc mvc;
-
   @MockBean
   UserService service;
 
   @Test
-  void shouldReturnUserNotFoundForNonExistsOne() {
-    doThrow(UserNotFoundException.class).when(service).delete(any(Long.class));
-    doThrow(UserNotFoundException.class).when(service).update(any(Long.class), any(User.class));
-    doThrow(UserNotFoundException.class).when(service)
-        .updateRequiredFields(any(Long.class), any(User.class));
+  void shouldReturnUserNotFoundForNonExistsOne() throws JsonProcessingException {
+    User user = getTestUser();
+
+    doThrow(UserNotFoundException.class).when(service).delete(1l);
+    doThrow(UserNotFoundException.class).when(service).update(1l, user);
+    doThrow(UserNotFoundException.class).when(service).updateRequiredFields(1, user);
+
+    String body = mapper.writeValueAsString(user);
 
     assertAll(() -> mvc.perform(delete(USERS_1_TEMPLATE)).andExpect(status().isNotFound()),
-        () -> mvc.perform(put(USERS_1_TEMPLATE)).andExpect(status().isNotFound()),
-        () -> mvc.perform(patch(USERS_1_TEMPLATE)).andExpect(status().isNotFound()));
+        () -> mvc.perform(
+                put(USERS_1_TEMPLATE).content(body).contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound()),
+        () -> mvc.perform(
+                patch(USERS_1_TEMPLATE).content(body).contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound()));
   }
 
   @Test
-  void shouldReturnNoContentThanNotFound() {
-    doNothing().when(service).delete(any(Long.class));
-    doThrow().when(service).delete(any(Long.class));
-
+  void shouldReturnNoContentThanNotFound() throws Exception {
+    doNothing().doThrow(new UserNotFoundException()).when(service).delete(1l);
     assertAll(() -> mvc.perform(delete(USERS_1_TEMPLATE)).andExpect(status().isNoContent()),
         () -> mvc.perform(delete(USERS_1_TEMPLATE)).andExpect(status().isNotFound()));
 
@@ -67,14 +75,13 @@ class UserControllerTest {
 
   @Test
   void shouldReturnMessageWithMessageForInvalidFields() throws Exception {
-    ObjectMapper mapper = new ObjectMapper();
     String emptyUser = mapper.writeValueAsString(User.builder().build());
 
     assertAll(
         () -> mvc.perform(
                 put(USERS_1_TEMPLATE).contentType(MediaType.APPLICATION_JSON).content(emptyUser))
             .andExpect(status().isBadRequest()),
-        () -> mvc.perform(post("/user").contentType(MediaType.APPLICATION_JSON).content(emptyUser))
+        () -> mvc.perform(post("/users").contentType(MediaType.APPLICATION_JSON).content(emptyUser))
             .andExpect(status().isBadRequest()),
         () -> mvc.perform(
                 patch(USERS_1_TEMPLATE).contentType(MediaType.APPLICATION_JSON).content(emptyUser))
@@ -85,14 +92,15 @@ class UserControllerTest {
   @Test
   void shouldReturnMessageWithInvalidDataFormatForSearch() {
 
-    assertAll(() -> mvc.perform(get(SEARCH_TEMPLATE + "?from=1238712983712&to=123761`27312"))
+    assertAll(() -> mvc.perform(get(SEARCH_TEMPLATE + "?from=1238712983712&to=12376127312"))
             .andExpect(status().isBadRequest()).andExpect(
                 jsonPath("$.from").value("Date 'FROM' should format in 'yyyy-mm-dd'")
             ).andExpect(
                 jsonPath("$.to").value("Date 'FROM' should format in 'yyyy-mm-dd'")
             ),
         () -> mvc.perform(
-                post(SEARCH_TEMPLATE).content("{\"from\": \"12992312\", \"to\": \"12312312\"}"))
+                post(SEARCH_TEMPLATE).content("{\"from\": \"12992312\", \"to\": \"12312312\"}")
+                    .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isBadRequest()).andExpect(
                 jsonPath("$.from").value("Date 'FROM' should format in 'yyyy-mm-dd'")
             ).andExpect(
@@ -104,22 +112,18 @@ class UserControllerTest {
   void shouldReturnArrayWithThreeUsers() throws JsonProcessingException {
     List<User> testUsers = getTestUsers();
     when(service.searchByDate(any(), any())).thenReturn(testUsers);
-    ObjectMapper mapper = new ObjectMapper();
     DateFilter filter = new DateFilter("1900-01-01", "2025-01-01");
-
-    assertAll(() -> mvc.perform(get(SEARCH_TEMPLATE + "?from=1900-01-01&to=2025-01-01"))
+    String expectedValue = mapper.writeValueAsString(testUsers);
+    assertAll(() -> mvc.perform(
+                get(SEARCH_TEMPLATE).queryParam("from", filter.getFrom()).queryParam("to", filter.getTo()))
             .andExpect(status().isOk()).andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$.length").value(2))
-            .andExpect(jsonPath("$.[0]").value(mapper.writeValueAsString(testUsers.get(0))))
-            .andExpect(jsonPath("$.[1]").value(mapper.writeValueAsString(testUsers.get(1))))
-            .andExpect(jsonPath("$.[2]").value(mapper.writeValueAsString(testUsers.get(2)))),
-        () -> mvc.perform(post(SEARCH_TEMPLATE).content(mapper.writeValueAsString(filter)))
+            .andExpect(content().string(expectedValue)),
+        () -> mvc.perform(post(SEARCH_TEMPLATE).content(mapper.writeValueAsString(filter))
+                .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk()).andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$.length").value(2))
-            .andExpect(jsonPath("$.[0]").value(mapper.writeValueAsString(testUsers.get(0))))
-            .andExpect(jsonPath("$.[1]").value(mapper.writeValueAsString(testUsers.get(1))))
-            .andExpect(jsonPath("$.[2]").value(mapper.writeValueAsString(testUsers.get(2)))));
+            .andExpect(content().string(expectedValue)));
 
   }
+
 
 }
