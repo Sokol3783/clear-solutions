@@ -4,8 +4,8 @@ The task has two parts:
 
 Requirements:
 1. It has the following fields:
-    1.1. Email (required). Add validation against email pattern
-    1.2. First name (required)
+   [x] 1.1. Email (required). Add validation against email pattern
+   [x] 1.2. First name (required)
     1.3. Last name (required)
     1.4. Birth date (required). Value must be earlier than current date
     1.5. Address (optional)
