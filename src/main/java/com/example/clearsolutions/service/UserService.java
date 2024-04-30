@@ -49,7 +49,7 @@ public class UserService {
     User saved = findById(id);
     User updated = updateNotNullFields(userForUpdate, saved.toBuilder());
 
-    Set<ConstraintViolation<User>> validate = validator.validate(updated, User.class);
+    Set<ConstraintViolation<User>> validate = validator.validate(updated);
     if (!validate.isEmpty()) {
       throw new ConstraintViolationException(validate);
     }
